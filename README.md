@@ -28,7 +28,7 @@ Good to go!
 index.mjs CLOCK_IN [COOKIE]
 ```
 
-- `CLOCK_IN` (`int`) 0|1 - If clocking in or out. Values: In=1, Out=2
+- `CLOCK_IN` (`int`) - If clocking in or out. Values: In=1, Out=2
 - `COOKIE` (`string`) - Cookie value to get an opened session
 
 ### Example:
