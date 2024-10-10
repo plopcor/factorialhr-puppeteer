@@ -23,6 +23,25 @@ To get a valid session cookie:
 
 Good to go!
 
+## Clock in/out
+`index.mjs CLOCK_IN [COOKIE]`
+
+- `CLOCK_IN` (`bool`) - If clocking in or out. Values: In=1, Out=0
+- `COOKIE` (`string`) - Cookie value to get an opened session
+
+### Example:
+```
+// Clock in with a cookie for the first time
+index.mjs 1 a123b456c678d901e
+
+// Clock in with an already set cookie
+index.mjs 1
+
+// Clock out with an already set cookie
+index.mjs 0
+```
+
+
 ## Cron
 `cron.js`
 
@@ -33,7 +52,7 @@ You can specify days individually or group them
 
 Work schedule configuration:
 
-```json
+```
 CLOCK = [
     day_of_week: [
         [clock_in, clock_out],
@@ -82,20 +101,3 @@ Monday to Friday from 8:30 to 17:30
 ]
 ```
 
-## Execute directly
-`index.mjs CLOCK_IN [COOKIE]`
-
-- `CLOCK_IN` (`int`) - If clocking in or out. Values: In=1, Out=2
-- `COOKIE` (`string`) - Cookie value to get an opened session
-
-### Example:
-```
-// Clock in with a cookie for the first time
-index.mjs 1 a123b456c678d901e
-
-// Clock in with an already set cookie
-index.mjs 1
-
-// Clock out with an already set cookie
-index.mjs 0
-```
