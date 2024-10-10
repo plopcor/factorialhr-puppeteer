@@ -23,8 +23,8 @@ const COOKIE = '<FILL_WITH_COOKIE>';
 
 // Help with "--help" argument
 if (process.argv[2] === '--help') {
-	console.log("Command: index.js <is_fitxar> [factorial_session_cookie]")
-	console.log("Exeample: index.js 0|1 [12345678ABC]")
+	console.log("Command: manual.js <is_clock_in> [factorial_session_cookie]")
+	console.log("Exeample: manual.js 0|1 [12345678ABC]")
 	process.exit(0)
 }
 
@@ -43,15 +43,15 @@ const FACTORIAL_COOKIE = {
 
 // ---------- ARGUMENTS
 
-// Argument: Fitxar o desfitxar
+// Argument: Click in/out
 if (IS_FITXAR === undefined || (IS_FITXAR !== '0' && IS_FITXAR !== '1')) {
- 	console.error("[ERROR] Falta especificar si fitxa o desfitxa (1 o 0), mirar README.txt")
+	console.error("[ERROR] Clock in/out value is missing, specify 0 or 1. See README.txt")
 	process.exit(1)
 }
 
 // Argument (optional): Factorial session cookie
 if (process.argv[3] && process.argv[3].length < 10) {
-	console.error("[ERROR] Cookie de sessio erronea, format invalid")
+	console.error("[ERROR] Invalid session token format")
 	process.exit(1)
 }
 
@@ -78,27 +78,28 @@ async function getRemoteDebugWSURL() {
 
 // ---------- MAIN
 
-console.log("> FITXAR:", Boolean(IS_FITXAR))
+console.log("> Clock:", Boolean(IS_FITXAR) ? "IN" : "OUT")
 
 // Get already opened Chrome debugging URL
-var DEBUG_URL = await getRemoteDebugWSURL();
+var DEBUG_WS_URL = await getRemoteDebugWSURL();
 // If not opened
-if (DEBUG_URL == null) {
+if (DEBUG_WS_URL == null) {
 	console.log("[Chrome] New instance")
 	// Launch Chrome
 	await exec('google-chrome --incognito --remote-debugging-port=9222')
 	await delay(2000)
-	DEBUG_URL = await getRemoteDebugWSURL();
+	DEBUG_WS_URL = await getRemoteDebugWSURL();
 }
 
-if (DEBUG_URL == null) {
+if (DEBUG_WS_URL == null) {
 	console.error("[ERROR] Chrome in debugging mode not found or debug URL not found")	
+	// console.error("[ERROR] Chrome instance with debugging mode enabled not found")
 	process.exit(1)
 }
 
-// Conectar al navegador
+// Connector to running Chrome instance
 const browser = await puppeteer.connect({
-  browserWSEndpoint: DEBUG_URL,
+  browserWSEndpoint: DEBUG_WS_URL,
 });
 
 // Get actual page
@@ -134,7 +135,7 @@ await page.goto(DASHBOARD_URL, {
 });
 
 // If needs login (or got redirected)
-if (page.url() != DASHBOARD_URL) {
+if (page.url() !== DASHBOARD_URL) {
 	console.error("[ERROR] Session token expired, specify a new one");
 	browser.close();
 	process.exit(1)
@@ -153,8 +154,7 @@ if (
 ) {
 	await fitxarBtn.evaluate(e => e.click());
 }
+
 // If need to interact again with fitxarBtn, get it again
-
 console.log("DONE - Fitxat")
-
 process.exit(0)
