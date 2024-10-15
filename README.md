@@ -8,7 +8,7 @@ npm i
 # Usage
 **You will need to provide a cookie for the first access or if the session cookie expired (22h after the last page refresh)**.
 
-Cookie must be extracted from an already opened session. More info at "Extract session cookie"
+Cookie must be extracted from an already opened session. See "[Extract session cookie](#extract-session-cookie)"
 
 ## Extract session cookie
 You will only have to do this once, as the script will keep the cookie valid on each refresh.
@@ -42,11 +42,11 @@ index.mjs 0
 ```
 
 
-## Cron
+## Schedule clock in/out
 `cron.js`
 
-Configure work schedule for the week.
-You can specify days individually or group them
+Configure work schedule for the week (automatically clock in and out).
+You can specify days individually or group them.
 
 ### Configure schedule
 
@@ -87,7 +87,7 @@ Grouping days:
 **Examples**
 
 Monday from 8:00 to 14:00 and 15:00 to 17:30
-```json
+```
 1: [
     [8, 14],
     [15, 17.30]
@@ -95,7 +95,7 @@ Monday from 8:00 to 14:00 and 15:00 to 17:30
 ```
 
 Monday to Friday from 8:30 to 17:30
-```json
+```
 "1-5": [
     [8.30, 17.30]
 ]
