@@ -1,39 +1,11 @@
 const cron = require('node-cron');
+const { configuration, loadToken, validateToken, saveToken } = require('./config.base.js')
+const child_process = require('child_process')
 
-// ---------------------------------------
-// # CONFIGURATION
+const CLOCKS = configuration.SCHEDULE;
+const TASK_FILE = './cron_job.mjs'
 
-/*
-Clock format:
-
-    <day_of_week>: [
-        [<clock_in_hour>, <clock_out_hour>],
-        [<clock_in_hour>, <clock_out_hour>],
-        [<clock_in_hour.minute>, <clock_out_hour.minutes>]
-    ]
-
-- day_of_week: 1 to 7, group using '1-3' or multiple using '1,3,5'
-- clock_in/out_hour[.minute]: Hour in 24h format (minute is optional). Ex: 9.30 -> 9:30/9:30am, 15 -> 15:00/3pm, 18.45 -> 18:45/6:45pm
-*/
-
-const CLOCKS = {
-    '1-4': [
-        [8.30, 11],
-        [11.30, 14],
-        [15, 18]
-    ],
-    5: [
-        [8, 11],
-        [11.30, 14]
-    ]
-    // '1,3,5': [ ... ] // Days 1, 3 and 5
-    // '1-3':           // Days 1 to 3
-}
-
-
-// ---------------------------------------
-
-// ---------- FUNCTION
+// ---------- FUNCTIONS
 function getDateTime() {
     return (new Date()).toLocaleString();
 }
@@ -42,10 +14,58 @@ function validateInt(val, min, max) {
     return (val >= min && val <= max);
 }
 
-// ---------- MAIN
+function getToken() {
+    if (!SESSION_TOKEN) {
+        SESSION_TOKEN = loadToken();
+    }
+    return SESSION_TOKEN || null;
+}
 
-if (Object.keys(CLOCKS).length === 0) {
-    console.log("[ERROR] Clocking schedule can't be empty")
+function setToken(token) {
+    SESSION_TOKEN = token;
+    saveToken(token)
+}
+
+
+function executeTask(isClockIn) {
+    // Get token
+    let token = getToken();
+    if (!token || !validateToken(token)) {
+        return Error("Invalid session token")
+    }
+
+    // Start job
+    var process = child_process.fork(TASK_FILE, [
+        isClockIn ? 1 : 0,
+        token
+    ])
+
+    process.on('spawn', () => console.log("[Task] Spawned"));
+
+    process.on('message', (data) => console.log("[Task] Data: " + data));   // Triggers when child process uses process.send, in JSON format 
+
+    process.on('error', (err) => console.log("[Task] ERROR: " + err));
+
+    // process.on('close', onExit);
+    process.on('exit', (code) => {
+        if (code == 0) {
+            console.log("[Task] OK")
+        } else {
+            console.log("[Task] Failed")
+        }
+    });
+}
+
+
+// ---------- MAIN
+let SESSION_TOKEN;
+SESSION_TOKEN = process.argv[2] || getToken();
+if (!SESSION_TOKEN) {
+    console.error("[ERROR] Token not found")
+    process.exit(1)
+}
+if (!validateToken(SESSION_TOKEN)) {
+    console.log("[ERROR] Token format is invalid")
     process.exit(1)
 }
 
@@ -57,7 +77,6 @@ if (Object.keys(CLOCKS).length === 0) {
 */
 
 let cronStrings = [];
-
 for (let dayOfWeek of Object.keys(CLOCKS)) {
 
     console.log(`[Schedule] Day/s: ${dayOfWeek} => ${CLOCKS[dayOfWeek].map(e => e.join('-')).join(" | ")}`)
@@ -93,23 +112,18 @@ for (let dayOfWeek of Object.keys(CLOCKS)) {
             process.exit(1)
         }
 
-        // console.log("IN ", inCron);
-        // console.log("OUT", outCron);
-
         cronStrings.push([inCron, outCron])
-        // cronStrings.push([
-        //     { str: inCron, dayOfWeek, inHour, inMin: inMin || null },
-        //     { str: outCron, dayOfWeek, outHour, outMin: outMin || null }
-        // ])
     }
 
 }
 
 // Validate
 if (cronStrings.length === 0) {
-    console.error("[ERROR] No crons set")
+    console.error("[ERROR] Can't generate schedule tasks")
     process.exit(1)
 }
+
+saveToken(SESSION_TOKEN)
 
 // Schedule in and outs
 for (let [inCron, outCron] of cronStrings) {
@@ -117,13 +131,13 @@ for (let [inCron, outCron] of cronStrings) {
     // In
     cron.schedule(inCron, () => {
         console.log(`[${getDateTime()}] Clock in`)
-        // TODO => index.mjs 1 <access_token>
+        executeTask(true)
     });
 
     // Out
     cron.schedule(outCron, () => {
         console.log(`[${getDateTime()}] Clock out`)
-        // TODO => index.mjs 0 <access_token>
+        executeTask(false)
     });
 }
 
